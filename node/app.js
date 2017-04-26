@@ -10,19 +10,43 @@
 /* jshint node: true, devel: true */
 'use strict';
 
-const 
-  bodyParser = require('body-parser'),
-  config = require('config'),
-  crypto = require('crypto'),
-  express = require('express'),
-  https = require('https'),  
-  request = require('request');
+const bodyParser = require('body-parser');
+const config = require('config');
+const crypto = require('crypto');
+const express = require('express');
+const https = require('https');
+const request = require('request');
 
-var app = express();
+const removeAccents = require('remove-accents');
+const languageThing = require('./languageThing');
+const meetup = require('./meetup');
+
+const MEETUP_API_KEY = (process.env.MEETUP_API_KEY) ?
+  (process.env.MEETUP_API_KEY) :
+  config.get('meetupApiKey');
+
+const MEETUP_GROUP_NAME = (process.env.MEETUP_GROUP_NAME) ?
+  (process.env.MEETUP_GROUP_NAME) :
+  config.get('meetupGroupName');
+
+const Meetup = new meetup(MEETUP_API_KEY);
+
+
+const app = express();
+
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
+
+function getNextMeetup() {
+  return Meetup.getNextEvent(MEETUP_GROUP_NAME)
+    .then(groupData => {
+      return Meetup.getEventData(groupData.id).then(eventData => {
+        return eventData.results;
+      });
+    });
+}
 
 /*
  * Be sure to setup your config values before running this code. You can 
@@ -251,67 +275,79 @@ function receivedMessage(event) {
 
   if (messageText) {
 
-    // If we receive a text message, check to see if it matches any special
-    // keywords and send back the corresponding example. Otherwise, just echo
-    // the text we received.
-    switch (messageText) {
-      case 'image':
-        sendImageMessage(senderID);
-        break;
+  //   // If we receive a text message, check to see if it matches any special
+  //   // keywords and send back the corresponding example. Otherwise, just echo
+  //   // the text we received.
+  //   switch (messageText) {
+  //     case 'image':
+  //       sendImageMessage(senderID);
+  //       break;
 
-      case 'gif':
-        sendGifMessage(senderID);
-        break;
+  //     case 'gif':
+  //       sendGifMessage(senderID);
+  //       break;
 
-      case 'audio':
-        sendAudioMessage(senderID);
-        break;
+  //     case 'audio':
+  //       sendAudioMessage(senderID);
+  //       break;
 
-      case 'video':
-        sendVideoMessage(senderID);
-        break;
+  //     case 'video':
+  //       sendVideoMessage(senderID);
+  //       break;
 
-      case 'file':
-        sendFileMessage(senderID);
-        break;
+  //     case 'file':
+  //       sendFileMessage(senderID);
+  //       break;
 
-      case 'button':
-        sendButtonMessage(senderID);
-        break;
+  //     case 'button':
+  //       sendButtonMessage(senderID);
+  //       break;
 
-      case 'generic':
-        sendGenericMessage(senderID);
-        break;
+  //     case 'generic':
+  //       sendGenericMessage(senderID);
+  //       break;
 
-      case 'receipt':
-        sendReceiptMessage(senderID);
-        break;
+  //     case 'receipt':
+  //       sendReceiptMessage(senderID);
+  //       break;
 
-      case 'quick reply':
-        sendQuickReply(senderID);
-        break;        
+  //     case 'quick reply':
+  //       sendQuickReply(senderID);
+  //       break;        
 
-      case 'read receipt':
-        sendReadReceipt(senderID);
-        break;        
+  //     case 'read receipt':
+  //       sendReadReceipt(senderID);
+  //       break;        
 
-      case 'typing on':
-        sendTypingOn(senderID);
-        break;        
+  //     case 'typing on':
+  //       sendTypingOn(senderID);
+  //       break;        
 
-      case 'typing off':
-        sendTypingOff(senderID);
-        break;        
+  //     case 'typing off':
+  //       sendTypingOff(senderID);
+  //       break;        
 
-      case 'account linking':
-        sendAccountLinking(senderID);
-        break;
+  //     case 'account linking':
+  //       sendAccountLinking(senderID);
+  //       break;
 
-      default:
-        sendTextMessage(senderID, messageText);
+  //     default:
+  //       sendTextMessage(senderID, messageText + "!!!");
+  //   }
+  // } else if (messageAttachments) {
+  //   sendTextMessage(senderID, "Message with attachment received");
+  // }
+    const normalizedMessageText = removeAccents(messageText);
+    if(languageThing.isNextMeetupQuestion(normalizedMessageText)) {
+      sendTypingOn();
+      getNextMeetup().then(meetupData => {
+        meetupData.map(event => {
+          sendTypingOff();
+          sendTextMessage(senderID, `${event.name} - ${event.event_url}`);
+        });
+      });
     }
-  } else if (messageAttachments) {
-    sendTextMessage(senderID, "Message with attachment received");
+
   }
 }
 

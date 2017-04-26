@@ -2,5 +2,8 @@
     "appSecret": "",
     "pageAccessToken": "",
     "validationToken": "",
-    "serverURL": ""
+    "serverURL": "",
+    "meetupApiKey": "",
+    "meetupGroupName": "Angular-Colombia"
 }
+

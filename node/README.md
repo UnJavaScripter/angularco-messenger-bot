@@ -1,3 +1,17 @@
+# My Version
+
+This bot will send back information of the next event of a certain group on [Meetup.com](https://www.meetup.com).
+
+You will need [a Meetup.com API key](https://www.meetup.com/meetup_api/).
+
+Running the bot:
+
+Besides the original project params (stated below) you will need to pass an additional `MEETUP_API_KEY` and `MEETUP_GROUP_NAME`.
+
+> Note: It expects the messages to be in spanish.
+
+---
+
 # Messenger Platform Sample -- node.js
 
 This project is an example server for Messenger Platform built in Node.js. With this app, you can send it messages and it will echo them back to you. You can also see examples of the different types of Structured Messages. 
